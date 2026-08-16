@@ -32,12 +32,18 @@
 - Android SDK（compileSdk 35）
 - Gradle 8.10（项目内使用 `gradle.bat` / `gradle` 命令，或用 Android Studio 打开）
 
-命令行构建：
+命令行构建（推荐使用项目内置的 Gradle Wrapper，自动从国内镜像下载 Gradle 8.10）：
 
 ```bash
 cd BeadPixel
-gradle :app:assembleDebug     # 调试包
-gradle :app:assembleRelease   # 发布包
+./gradlew :app:assembleDebug      # 调试包（Windows 使用 gradlew.bat）
+./gradlew :app:assembleRelease    # 发布包
+```
+
+或使用本机已安装的 Gradle 8.10：
+
+```bash
+gradle :app:assembleDebug
 ```
 
 产物位于 `app/build/outputs/apk/{debug,release}/`。
