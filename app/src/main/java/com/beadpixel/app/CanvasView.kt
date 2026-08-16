@@ -59,6 +59,7 @@ class CanvasView @JvmOverloads constructor(
     private val gridPaint = Paint()
     private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val labelPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val labelBgPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val borderPaint = Paint()
     private val filterPaint = Paint().apply { isFilterBitmap = true }
     private val nearestPaint = Paint()
@@ -166,6 +167,12 @@ class CanvasView @JvmOverloads constructor(
     }
 
     fun cellSizeDp(): Float = scale / resources.displayMetrics.density
+
+
+
+
+
+
 
 
 
@@ -299,42 +306,6 @@ class CanvasView @JvmOverloads constructor(
                 }
             }
         }
-        // 常驻坐标标注：底部列号 + 左侧行号（不依赖缩放级别，画布左/底边界在屏幕内即显示；步长自适应避免重叠）
-        if (showGrid) {
-            val night = isNight()
-            val labelColor = if (night) 0xCCFFFFFF.toInt() else 0xCC000000.toInt()
-            val labelCanvasLeft = offX
-            val labelCanvasBottom = offY + heightCells * scale
-            val labelStep = 5 * ceil(48f / (scale * 5f)).toInt().coerceAtLeast(1)
-            labelPaint.textSize = dp(9f)
-            labelPaint.color = labelColor
-            if (labelCanvasBottom + dp(13f) <= height.toFloat()) {
-                labelPaint.textAlign = Paint.Align.CENTER
-                var li = ((x0 + labelStep - 1) / labelStep) * labelStep
-                while (li <= x1) {
-                    if (li >= 0 && li <= widthCells) {
-                        val lx = offX + li * scale
-                        if (lx >= -30f && lx <= width.toFloat() + 30f) {
-                            canvas.drawText(li.toString(), lx, labelCanvasBottom + dp(12f), labelPaint)
-                        }
-                    }
-                    li += labelStep
-                }
-            }
-            if (labelCanvasLeft >= dp(16f)) {
-                labelPaint.textAlign = Paint.Align.RIGHT
-                var lj = ((y0 + labelStep - 1) / labelStep) * labelStep
-                while (lj <= y1) {
-                    if (lj >= 0 && lj <= heightCells) {
-                        val ly = offY + lj * scale
-                        if (ly >= -30f && ly <= height.toFloat() + 30f) {
-                            canvas.drawText(lj.toString(), labelCanvasLeft - dp(4f), ly + labelPaint.textSize / 3f, labelPaint)
-                        }
-                    }
-                    lj += labelStep
-                }
-            }
-        }
         if (drawCodes) {
             for (cy in y0 until y1) {
                 val rowBase = cy * widthCells
@@ -344,6 +315,114 @@ class CanvasView @JvmOverloads constructor(
                     if (c == 0) continue
                     val t = paletteMap[c] ?: ("#" + ColorUtils.hex(c))
                     drawCellText(canvas, t, offX + cx * scale, top, scale, c)
+                }
+            }
+        }
+
+        // 格数标注：仿 p10（左深灰竖条 + 底白条，直角；放大细分每格、贴屏幕边缘；缩小贴画布边缘）
+        if (showGrid && scale >= dp(8f)) {
+            val night = isNight()
+            val colBarColor = if (night) 0xF0333333.toInt() else 0xFFFFFFFF.toInt()
+            val colTextColor = if (night) 0xFFFFFFFF.toInt() else 0xFF000000.toInt()
+            labelPaint.textSize = dp(7f)
+            labelPaint.textAlign = Paint.Align.CENTER
+            val canvasOut = offX < -1f || offY < -1f ||
+                (offX + widthCells * scale) > width.toFloat() + 1f ||
+                (offY + heightCells * scale) > height.toFloat() + 1f
+            if (canvasOut) {
+                // 放大：屏幕边缘，细分到每格
+                val step = if (scale >= dp(14f)) 1 else ceil(48f / scale).toInt().coerceAtLeast(1)
+                val rowBarW = dp(22f)
+                val colBarH = dp(24f)
+                // 左侧行号竖条（白色，与底部一致；直角；收窄）
+                labelBgPaint.color = colBarColor
+                canvas.drawRect(0f, 0f, rowBarW, height.toFloat(), labelBgPaint)
+                // 数字间分隔线（格子行边界）
+                labelBgPaint.color = if (night) 0x44FFFFFF.toInt() else 0x44000000.toInt()
+                var lineJ = y0
+                while (lineJ <= y1) {
+                    val lineY = offY + lineJ * scale
+                    if (lineY >= 0f && lineY <= height.toFloat()) {
+                        canvas.drawRect(dp(2f), lineY, rowBarW - dp(2f), lineY + dp(1f), labelBgPaint)
+                    }
+                    lineJ += step
+                }
+                labelPaint.color = colTextColor
+                var lj = ((y0 + step - 1) / step) * step
+                while (lj <= y1) {
+                    if (lj >= 0 && lj < heightCells) {
+                        val ly = offY + lj * scale + scale / 2f
+                        if (ly >= 0f && ly <= height.toFloat() - colBarH) {
+                            canvas.drawText(lj.toString(), rowBarW / 2f, ly + labelPaint.textSize / 3f, labelPaint)
+                        }
+                    }
+                    lj += step
+                }
+                // 底部列号横条（直角，从行号条右侧开始）
+                val barY = height.toFloat() - colBarH
+                labelBgPaint.color = colBarColor
+                canvas.drawRect(rowBarW, barY, width.toFloat(), height.toFloat(), labelBgPaint)
+                labelPaint.color = colTextColor
+                var li = ((x0 + step - 1) / step) * step
+                while (li <= x1) {
+                    if (li >= 0 && li < widthCells) {
+                        val lx = offX + li * scale + scale / 2f
+                        if (lx >= rowBarW && lx <= width.toFloat()) {
+                            canvas.drawText(li.toString(), lx, barY + dp(15f), labelPaint)
+                        }
+                    }
+                    li += step
+                }
+            } else {
+                // 缩小/适配：画布边缘，每 5 格
+                val step = 5 * ceil(48f / (scale * 5f)).toInt().coerceAtLeast(1)
+                val labelCanvasLeft = offX
+                val labelCanvasRight = offX + widthCells * scale
+                val labelCanvasTop = offY
+                val labelCanvasBottom = offY + heightCells * scale
+                val rowBarW = dp(22f)
+                val colBarH = dp(24f)
+                // 底部列号横条（画布底边下方）
+                if (labelCanvasBottom + colBarH <= height.toFloat()) {
+                    labelBgPaint.color = colBarColor
+                    canvas.drawRect(labelCanvasLeft, labelCanvasBottom, labelCanvasRight, labelCanvasBottom + colBarH, labelBgPaint)
+                    labelPaint.color = colTextColor
+                    var li = ((x0 + step - 1) / step) * step
+                    while (li <= x1) {
+                        if (li >= 0 && li <= widthCells) {
+                            val lx = offX + li * scale + scale / 2f
+                            if (lx >= -30f && lx <= width.toFloat() + 30f) {
+                                canvas.drawText(li.toString(), lx, labelCanvasBottom + dp(15f), labelPaint)
+                            }
+                        }
+                        li += step
+                    }
+                }
+                // 左侧行号竖条（画布左边，白色，收窄，带分隔线）
+                if (labelCanvasLeft >= rowBarW + dp(4f)) {
+                    val barX = labelCanvasLeft - rowBarW
+                    labelBgPaint.color = colBarColor
+                    canvas.drawRect(barX, labelCanvasTop, barX + rowBarW, labelCanvasBottom, labelBgPaint)
+                    labelBgPaint.color = if (night) 0x44FFFFFF.toInt() else 0x44000000.toInt()
+                    var lineJ = y0
+                    while (lineJ <= y1) {
+                        val lineY = offY + lineJ * scale
+                        if (lineY >= labelCanvasTop && lineY <= labelCanvasBottom) {
+                            canvas.drawRect(barX + dp(2f), lineY, barX + rowBarW - dp(2f), lineY + dp(1f), labelBgPaint)
+                        }
+                        lineJ += step
+                    }
+                    labelPaint.color = colTextColor
+                    var lj = ((y0 + step - 1) / step) * step
+                    while (lj <= y1) {
+                        if (lj >= 0 && lj <= heightCells) {
+                            val ly = offY + lj * scale + scale / 2f
+                            if (ly >= -30f && ly <= height.toFloat() + 30f) {
+                                canvas.drawText(lj.toString(), barX + rowBarW / 2f, ly + labelPaint.textSize / 3f, labelPaint)
+                            }
+                        }
+                        lj += step
+                    }
                 }
             }
         }
@@ -373,6 +452,8 @@ class CanvasView @JvmOverloads constructor(
         }
         invalidate()
     }
+
+
 
     /** 放大时直接按全分辨率绘制可见格子（色块 + 可选棋盘格背景），与网格线严格对齐。 */
     private fun drawDirectCells(canvas: Canvas, x0: Int, x1: Int, y0: Int, y1: Int) {
