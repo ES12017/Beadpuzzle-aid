@@ -1,5 +1,7 @@
 # 拼豆辅助（BeadPixel）
 
+[![license](https://img.shields.io/badge/license-CC%20BY--NC--SA%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
+
 一款安卓拼豆（拼豆像素画）辅助工具：创建任意尺寸画布、用色卡/自定义调色盘绘制、
 图片转像素画、导出图纸并统计豆量。
 
