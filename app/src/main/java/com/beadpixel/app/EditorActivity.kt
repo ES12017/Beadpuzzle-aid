@@ -17,6 +17,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.widget.ImageButton
 import android.widget.LinearLayout
+import android.widget.RadioButton
+import android.widget.RadioGroup
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
@@ -223,7 +225,8 @@ class EditorActivity : AppCompatActivity() {
         val pal = p ?: Palette(name = "空")
         palette = pal
         binding.canvas.palette = pal.colors
-        binding.toolbar.subtitle = pal.name
+        binding.hudPaletteName.text = pal.name
+        binding.hudPaletteName.setTextColor(hudTextColor())
         selectedHudIndex = 0
         if (pal.colors.isNotEmpty()) {
             setCurrentColor(pal.colors[0].argb)
@@ -234,9 +237,37 @@ class EditorActivity : AppCompatActivity() {
         setTool(CanvasView.Tool.BRUSH)
     }
 
+    /** 色号列表滚动时，对接近视口底部的色号做 alpha 渐隐（作用到色号本身，非遮罩）。 */
+    private fun applyHudFade() {
+        val sv = binding.hudScroll
+        val parent = binding.hudSwatches
+        val viewH = sv.height
+        if (viewH <= 0) return
+        val fadeH = dpInt(48)
+        for (i in 0 until parent.childCount) {
+            val child = parent.getChildAt(i)
+            val childBottom = child.top - sv.scrollY + child.height
+            val distToBottom = viewH - childBottom
+            val alpha = (distToBottom / fadeH.toFloat()).coerceIn(0f, 1f)
+            child.alpha = alpha
+        }
+    }
+
     private fun buildColorHud() {
         val pal = palette ?: return
+
+        binding.hudPaletteName.text = pal.name
+        binding.hudPaletteName.setTextColor(hudTextColor())
         binding.hudSwatches.removeAllViews()
+        binding.hudScroll.post {
+            val maxH = (binding.canvas.height * 0.6f).toInt().coerceAtLeast(120)
+            binding.hudScroll.layoutParams = binding.hudScroll.layoutParams.apply { height = maxH }
+            applyHudFade()
+        }
+        if (binding.hudScroll.tag == null) {
+            binding.hudScroll.setOnScrollChangeListener { _, _, _, _, _ -> applyHudFade() }
+            binding.hudScroll.tag = true
+        }
         for ((i, c) in pal.colors.withIndex()) {
             val item = ItemHudSwatchBinding.inflate(LayoutInflater.from(this), binding.hudSwatches, false)
             val gd = android.graphics.drawable.GradientDrawable()
@@ -246,7 +277,7 @@ class EditorActivity : AppCompatActivity() {
             val label = if (c.code.isNotBlank()) c.code else if (c.name.isNotBlank()) c.name else ""
             item.codeText.text = label
             item.codeText.visibility = if (label.isEmpty()) View.INVISIBLE else View.VISIBLE
-            item.codeText.setTextColor(hudTextColor())
+            item.codeText.setTextColor(ColorUtils.contrastText(c.argb))
             item.swatchWrap.isSelected = (i == selectedHudIndex)
             item.root.setOnClickListener { selectHudColor(i) }
             binding.hudSwatches.addView(item.root)
@@ -374,59 +405,99 @@ class EditorActivity : AppCompatActivity() {
 
     private fun showExportDialog() {
         val p = project ?: return
-        Dialogs.exportPng(this) { scale, grid, showCode ->
-            val bmp = buildExportBitmapSafe(p, scale, grid, showCode)
-            showExportResult(bmp, p)
+        Dialogs.exportPng(this) { grid, showCode ->
+            val progress = android.app.ProgressDialog(this)
+            progress.setMessage("正在导出，大画布可能需要较长时间，请稍候…")
+            progress.setCancelable(false)
+            progress.show()
+            Thread {
+                val pair = buildExportBitmapSafe(p, grid, showCode)
+                runOnUiThread {
+                    try {
+                        progress.dismiss()
+                    } catch (e: Exception) {
+                    }
+                    if (pair.second) {
+                        Toast.makeText(this, "画布较大，已按设备支持的最大清晰度导出", Toast.LENGTH_LONG).show()
+                    }
+                    showExportResult(pair.first, p)
+                }
+            }.start()
         }
     }
 
     /**
-     * 以"尽可能无损"导出：优先使用用户指定的每格像素数，若画布过大导致内存不足
-     * 或超出设备位图尺寸，自动逐步降级并提示，换取尽量高的清晰度。
+     * 以设备支持的最高清晰度导出：从约 8192px 边长起步，若内存不足/超出设备
+     * 位图上限则自动降级，返回 (bitmap, 是否被降级)。
      */
-    private fun buildExportBitmapSafe(p: PixelProject, scalePx: Int, grid: Boolean, showCode: Boolean): Bitmap {
-        var s = scalePx.coerceIn(1, 100)
+    private fun buildExportBitmapSafe(p: PixelProject, grid: Boolean, showCode: Boolean): Pair<Bitmap, Boolean> {
+        var s = (8192 / maxOf(p.width, p.height)).coerceIn(1, 100)
+        var reduced = false
         while (true) {
             val px = p.width.toLong() * s
             val py = p.height.toLong() * s
             if (px * py <= 16000L * 16000L) {
                 try {
-                    val bmp = buildExportBitmap(p, s, grid, showCode)
-                    if (s != scalePx) {
-                        Toast.makeText(this, "图纸过大，已自动调整：每格 ${s}px（导出 ${px}×${py}）", Toast.LENGTH_LONG).show()
-                    }
-                    return bmp
+                    return Pair(buildExportBitmap(p, s, grid, showCode), reduced)
                 } catch (e: OutOfMemoryError) {
                     s = maxOf(1, s * 2 / 3)
+                    reduced = true
                     continue
                 } catch (e: Throwable) {
                     s = maxOf(1, s * 2 / 3)
+                    reduced = true
                     continue
                 }
             }
             s = maxOf(1, s * 2 / 3)
+            reduced = true
             if (s <= 1) break
         }
-        return buildExportBitmap(p, 1, grid, showCode)
+        return Pair(buildExportBitmap(p, 1, grid, showCode), reduced)
     }
 
     private fun showExportResult(bmp: Bitmap, p: PixelProject) {
         val name = p.name + "_" + p.width + "x" + p.height + ".png"
+        val container = LinearLayout(this)
+        container.orientation = LinearLayout.VERTICAL
+        container.setPadding(dpInt(24), dpInt(4), dpInt(24), 0)
+
+        val tip = TextView(this)
+        tip.text = "提示：图片较大时，在相册中放大需要加载一段时间才能清晰；如需打印/分享大图，可先裁切成小块。"
+        tip.textSize = 12f
+        tip.setTextColor(if (isNight()) Color.parseColor("#BDBDBD") else Color.parseColor("#616161"))
+        tip.setLineSpacing(0f, 1.2f)
+        container.addView(tip)
+
+        val radioGroup = RadioGroup(this)
+        radioGroup.orientation = RadioGroup.HORIZONTAL
+        val opts = arrayOf("不裁切", "4块", "9块", "16块")
+        opts.forEachIndexed { i, s ->
+            val rb = RadioButton(this)
+            rb.text = s
+            rb.id = 1000 + i
+            rb.isChecked = i == 0
+            radioGroup.addView(rb)
+        }
+        container.addView(radioGroup)
+
         MaterialAlertDialogBuilder(this)
             .setTitle("导出完成")
-            .setMessage("已生成 ${bmp.width}×${bmp.height} 图纸，可保存到相册或分享给他人对照使用。")
+            .setMessage("已生成 ${bmp.width}×${bmp.height} 图纸")
+            .setView(container)
             .setPositiveButton("保存", null)
             .setNeutralButton("分享", null)
             .setNegativeButton("关闭", null)
             .show()
             .apply {
                 getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener {
-                    if (SettingsRepository.exportToGallery(this@EditorActivity) && Build.VERSION.SDK_INT >= 29) {
-                        saveToGallery(bmp, name)
-                    } else {
-                        pendingPng = bmp
-                        createPng.launch(name)
+                    val parts = when (radioGroup.checkedRadioButtonId - 1000) {
+                        1 -> 4
+                        2 -> 9
+                        3 -> 16
+                        else -> 1
                     }
+                    saveExport(bmp, p, parts)
                     dismiss()
                 }
                 getButton(DialogInterface.BUTTON_NEUTRAL).setOnClickListener {
@@ -434,6 +505,79 @@ class EditorActivity : AppCompatActivity() {
                 }
             }
     }
+
+    /** 保存导出图（支持裁切 4/9/16 块），带加载动画，后台线程写相册避免卡顿。 */
+    private fun saveExport(bmp: Bitmap, p: PixelProject, parts: Int) {
+        val progress = android.app.ProgressDialog(this)
+        progress.setMessage("正在保存到相册，请稍候…")
+        progress.setCancelable(false)
+        progress.show()
+        Thread {
+            var ok = true
+            var savedCount = 0
+            try {
+                val baseName = p.name + "_" + p.width + "x" + p.height
+                if (parts <= 1) {
+                    saveToGallery(bmp, baseName + ".png")
+                    savedCount = 1
+                } else {
+                    val n = kotlin.math.sqrt(parts.toDouble()).toInt()
+                    val blocks = computeCropBlocks(p.width, p.height, n)
+                    val cellPx = maxOf(1, bmp.width / p.width)
+                    blocks.forEachIndexed { i, b ->
+                        val sub = Bitmap.createBitmap(
+                            bmp,
+                            b[0] * cellPx,
+                            b[1] * cellPx,
+                            (b[2] - b[0]) * cellPx,
+                            (b[3] - b[1]) * cellPx
+                        )
+                        saveToGallery(sub, baseName + "_" + (i + 1) + ".png")
+                        savedCount++
+                    }
+                }
+            } catch (e: Exception) {
+                ok = false
+            }
+            runOnUiThread {
+                try {
+                    progress.dismiss()
+                } catch (e: Exception) {
+                }
+                if (ok) {
+                    Toast.makeText(this, "已保存 $savedCount 张到相册（Pictures/拼豆像素画）", Toast.LENGTH_LONG).show()
+                } else {
+                    Toast.makeText(this, "保存失败，请重试", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }.start()
+    }
+
+    /** 把长度 len 尽量均匀分成 n 段，返回 n+1 个整数切点（边界对齐格子，避免切到色块中间）。 */
+    private fun splitDim(len: Int, n: Int): IntArray {
+        val base = len / n
+        val rem = len % n
+        val pts = IntArray(n + 1)
+        pts[0] = 0
+        for (i in 0 until n) {
+            pts[i + 1] = pts[i] + base + (if (i < rem) 1 else 0)
+        }
+        return pts
+    }
+
+    /** 按 n×n 块返回每块在格子坐标下的 [gx0, gy0, gx1, gy1]。 */
+    private fun computeCropBlocks(w: Int, h: Int, n: Int): List<IntArray> {
+        val xs = splitDim(w, n)
+        val ys = splitDim(h, n)
+        val blocks = ArrayList<IntArray>()
+        for (gy in 0 until n) {
+            for (gx in 0 until n) {
+                blocks.add(intArrayOf(xs[gx], ys[gy], xs[gx + 1], ys[gy + 1]))
+            }
+        }
+        return blocks
+    }
+
 
     private fun shareBitmap(bmp: Bitmap, name: String) {
         try {
@@ -454,27 +598,20 @@ class EditorActivity : AppCompatActivity() {
 
 
     private fun saveToGallery(bmp: Bitmap, name: String) {
-        try {
-            val values = ContentValues().apply {
-                put(MediaStore.Images.Media.DISPLAY_NAME, name)
-                put(MediaStore.Images.Media.MIME_TYPE, "image/png")
-                put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/拼豆像素画")
-                put(MediaStore.Images.Media.IS_PENDING, 1)
-            }
-            val uri = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
-            if (uri == null) {
-                Toast.makeText(this, "保存到相册失败", Toast.LENGTH_SHORT).show()
-                return
-            }
-            contentResolver.openOutputStream(uri)?.use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
-            values.clear()
-            values.put(MediaStore.Images.Media.IS_PENDING, 0)
-            contentResolver.update(uri, values, null, null)
-            Toast.makeText(this, "已保存到相册（Pictures/拼豆像素画）", Toast.LENGTH_LONG).show()
-        } catch (e: Exception) {
-            Toast.makeText(this, "保存到相册失败", Toast.LENGTH_SHORT).show()
+        val values = ContentValues().apply {
+            put(MediaStore.Images.Media.DISPLAY_NAME, name)
+            put(MediaStore.Images.Media.MIME_TYPE, "image/png")
+            put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/拼豆像素画")
+            put(MediaStore.Images.Media.IS_PENDING, 1)
         }
+        val uri = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
+            ?: throw RuntimeException("insert failed")
+        contentResolver.openOutputStream(uri)?.use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        values.clear()
+        values.put(MediaStore.Images.Media.IS_PENDING, 0)
+        contentResolver.update(uri, values, null, null)
     }
+
 
     private fun buildExportBitmap(p: PixelProject, scalePx: Int, grid: Boolean, showCode: Boolean): Bitmap {
         val bmp = Bitmap.createBitmap(p.width * scalePx, p.height * scalePx, Bitmap.Config.ARGB_8888)

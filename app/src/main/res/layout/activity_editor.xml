@@ -8,7 +8,7 @@
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
+        android:layout_height="48dp"
         app:navigationIconTint="?attr/colorOnSurface">
 
         <LinearLayout
@@ -77,55 +77,87 @@
             android:id="@+id/colorHud"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="bottom|start"
-            android:layout_margin="10dp"
+            android:layout_gravity="center_vertical|end"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            android:layout_marginEnd="2dp"
+            android:layout_marginRight="2dp"
             android:background="@drawable/bg_hud"
             android:elevation="4dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:padding="4dp">
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:padding="5dp">
 
-            <FrameLayout
-                android:layout_width="30dp"
-                android:layout_height="30dp"
-                android:layout_marginEnd="4dp"
-                android:layout_marginRight="4dp">
-
-                <View
-                    android:id="@+id/hudCurrent"
-                    android:layout_width="30dp"
-                    android:layout_height="30dp" />
-            </FrameLayout>
-
-            <TextView
-                android:id="@+id/hudHex"
+            <LinearLayout
+                android:id="@+id/hudCurrentSection"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginEnd="6dp"
-                android:layout_marginRight="6dp"
-                android:textSize="10sp"
-                android:textStyle="bold" />
+                android:background="@drawable/bg_hud_section"
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
+                android:paddingLeft="6dp"
+                android:paddingRight="6dp"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp">
+
+                <TextView
+                    android:id="@+id/hudPaletteName"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:gravity="center"
+                    android:maxLines="1"
+                    android:maxWidth="72dp"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+
+                <FrameLayout
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:layout_marginTop="5dp">
+
+                    <View
+                        android:id="@+id/hudCurrent"
+                        android:layout_width="30dp"
+                        android:layout_height="30dp" />
+                </FrameLayout>
+
+                <TextView
+                    android:id="@+id/hudHex"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="3dp"
+                    android:textSize="9sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
 
             <View
-                android:layout_width="1dp"
-                android:layout_height="26dp"
-                android:layout_marginEnd="4dp"
-                android:layout_marginRight="4dp"
+                android:layout_width="26dp"
+                android:layout_height="1dp"
+                android:layout_marginTop="5dp"
                 android:background="?attr/colorOutlineVariant" />
 
-            <HorizontalScrollView
-                android:layout_width="205dp"
-                android:layout_height="44dp"
-                android:scrollbars="none">
+            <FrameLayout
+                android:layout_width="46dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp">
 
-                <LinearLayout
-                    android:id="@+id/hudSwatches"
-                    android:layout_width="wrap_content"
-                    android:layout_height="match_parent"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal" />
-            </HorizontalScrollView>
+                <ScrollView
+                    android:id="@+id/hudScroll"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:scrollbars="none">
+
+                    <LinearLayout
+                        android:id="@+id/hudSwatches"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_horizontal"
+                        android:orientation="vertical" />
+                </ScrollView>
+            </FrameLayout>
         </LinearLayout>
+
 
         <TextView
             android:id="@+id/zoomInfo"

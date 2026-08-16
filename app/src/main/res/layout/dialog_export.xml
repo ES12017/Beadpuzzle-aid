@@ -5,24 +5,10 @@
     android:orientation="vertical"
     android:padding="20dp">
 
-    <com.google.android.material.textfield.TextInputLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="每格像素数（1-100）">
-
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/scaleInput"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:inputType="number"
-            android:maxLines="1" />
-    </com.google.android.material.textfield.TextInputLayout>
-
     <CheckBox
         android:id="@+id/gridCheck"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
         android:checked="true"
         android:text="显示网格线" />
 
@@ -33,4 +19,12 @@
         android:layout_marginTop="4dp"
         android:checked="true"
         android:text="显示色号文字（方便对照图纸）" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="将按设备支持的最高清晰度导出，大画布可能需要较长时间。"
+        android:textColor="?android:attr/textColorSecondary"
+        android:textSize="12sp" />
 </LinearLayout>

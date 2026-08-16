@@ -169,9 +169,8 @@ object Dialogs {
     }
 
 
-    fun exportPng(activity: AppCompatActivity, onOk: (scale: Int, grid: Boolean, showCode: Boolean) -> Unit) {
+    fun exportPng(activity: AppCompatActivity, onOk: (grid: Boolean, showCode: Boolean) -> Unit) {
         val binding = DialogExportBinding.inflate(activity.layoutInflater)
-        binding.scaleInput.setText("20")
         MaterialAlertDialogBuilder(activity)
             .setTitle("导出图片")
             .setView(binding.root)
@@ -180,8 +179,7 @@ object Dialogs {
             .show()
             .apply {
                 getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener {
-                    val s = binding.scaleInput.text?.toString()?.trim()?.toIntOrNull() ?: 20
-                    onOk(s.coerceIn(1, 100), binding.gridCheck.isChecked, binding.codeCheck.isChecked)
+                    onOk(binding.gridCheck.isChecked, binding.codeCheck.isChecked)
                     dismiss()
                 }
             }
