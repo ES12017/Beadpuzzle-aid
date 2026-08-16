@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.BeadPixel" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">#FFFFFF</item>
+        <item name="colorOnPrimary">#000000</item>
+        <item name="colorPrimaryContainer">#2A2A2A</item>
+        <item name="colorOnPrimaryContainer">#FFFFFF</item>
+        <item name="colorSecondary">#BDBDBD</item>
+        <item name="colorOnSecondary">#000000</item>
+        <item name="segmentButtonStyle">@style/Widget.BeadPixel.SegmentButton</item>
+        <item name="colorSurface">#121212</item>
+        <item name="colorOnSurface">#FFFFFF</item>
+        <item name="colorSurfaceVariant">#2A2A2A</item>
+        <item name="colorOnSurfaceVariant">#BDBDBD</item>
+        <item name="colorOutline">#616161</item>
+        <item name="colorOutlineVariant">#424242</item>
+        <item name="android:windowBackground">#121212</item>
+        <item name="shapeAppearanceCornerExtraSmall">@style/ShapeAppearance.BeadPixel</item>
+        <item name="shapeAppearanceCornerSmall">@style/ShapeAppearance.BeadPixel</item>
+        <item name="shapeAppearanceCornerMedium">@style/ShapeAppearance.BeadPixel</item>
+        <item name="shapeAppearanceCornerLarge">@style/ShapeAppearance.BeadPixel</item>
+        <item name="shapeAppearanceCornerExtraLarge">@style/ShapeAppearance.BeadPixel</item>
+    </style>
+</resources>

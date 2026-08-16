@@ -1,0 +1,294 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        app:navigationIconTint="?attr/colorOnSurface">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_gravity="end"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageButton
+                android:id="@+id/btnImage"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="图片转像素"
+                android:padding="8dp"
+                android:src="@drawable/ic_image"
+                app:tint="@drawable/bg_tool_tint" />
+
+            <ImageButton
+                android:id="@+id/btnPreview"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="预览"
+                android:padding="8dp"
+                android:src="@drawable/ic_preview"
+                app:tint="@drawable/bg_tool_tint" />
+
+            <ImageButton
+                android:id="@+id/btnUndo"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="撤销"
+                android:padding="8dp"
+                android:src="@drawable/ic_undo"
+                app:tint="@drawable/bg_tool_tint" />
+
+            <ImageButton
+                android:id="@+id/btnRedo"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginEnd="8dp"
+                android:layout_marginRight="8dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="重做"
+                android:padding="8dp"
+                android:src="@drawable/ic_redo"
+                app:tint="@drawable/bg_tool_tint" />
+        </LinearLayout>
+    </com.google.android.material.appbar.MaterialToolbar>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <com.beadpixel.app.CanvasView
+            android:id="@+id/canvas"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <!-- 悬浮色板 HUD：不占独立行，浮在画布上，可横向滑动快捷换色 -->
+        <LinearLayout
+            android:id="@+id/colorHud"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|start"
+            android:layout_margin="10dp"
+            android:background="@drawable/bg_hud"
+            android:elevation="4dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="4dp">
+
+            <FrameLayout
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_marginEnd="4dp"
+                android:layout_marginRight="4dp">
+
+                <View
+                    android:id="@+id/hudCurrent"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp" />
+            </FrameLayout>
+
+            <TextView
+                android:id="@+id/hudHex"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="6dp"
+                android:layout_marginRight="6dp"
+                android:textSize="10sp"
+                android:textStyle="bold" />
+
+            <View
+                android:layout_width="1dp"
+                android:layout_height="26dp"
+                android:layout_marginEnd="4dp"
+                android:layout_marginRight="4dp"
+                android:background="?attr/colorOutlineVariant" />
+
+            <HorizontalScrollView
+                android:layout_width="200dp"
+                android:layout_height="54dp"
+                android:scrollbars="none">
+
+                <LinearLayout
+                    android:id="@+id/hudSwatches"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal" />
+            </HorizontalScrollView>
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/zoomInfo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|end"
+            android:layout_margin="10dp"
+            android:background="@drawable/bg_zoom_info"
+            android:paddingLeft="8dp"
+            android:paddingRight="8dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp"
+            android:textColor="#FFFFFF"
+            android:textSize="11sp" />
+
+        <ImageButton
+            android:id="@+id/btnTogglePanel"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_gravity="bottom|end"
+            android:layout_margin="10dp"
+            android:background="@drawable/bg_tool_button"
+            android:contentDescription="收起面板"
+            android:padding="10dp"
+            android:src="@drawable/ic_collapse"
+            app:tint="@drawable/bg_tool_tint" />
+    </FrameLayout>
+
+    <!-- 可收起的面板：操作 + 工具 -->
+    <LinearLayout
+        android:id="@+id/toolsPanel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/colorSurface"
+        android:elevation="8dp"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingLeft="8dp"
+            android:paddingRight="8dp"
+            android:paddingTop="6dp">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnPalette"
+                style="@style/Widget.BeadPixel.ActionButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="4dp"
+                android:layout_marginRight="4dp"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:layout_weight="1"
+                android:text="切换调色盘"
+                app:icon="@drawable/ic_palette" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnExport"
+                style="@style/Widget.BeadPixel.ActionButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="4dp"
+                android:layout_marginRight="4dp"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:layout_weight="1"
+                android:text="导出图片"
+                app:icon="@drawable/ic_export" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnStats"
+                style="@style/Widget.BeadPixel.ActionButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="4dp"
+                android:layout_marginRight="4dp"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:layout_weight="1"
+                android:text="豆量统计"
+                app:icon="@drawable/ic_stats" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSettings"
+                style="@style/Widget.BeadPixel.ActionButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="4dp"
+                android:layout_marginStart="4dp"
+                android:layout_weight="1"
+                android:text="设置"
+                app:icon="@drawable/ic_settings" />
+        </LinearLayout>
+
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:scrollbars="none">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="6dp">
+
+                <ImageButton
+                    android:id="@+id/btnBrush"
+                    android:layout_width="@dimen/tool_button_size"
+                    android:layout_height="@dimen/tool_button_size"
+                    android:layout_margin="3dp"
+                    android:background="@drawable/bg_tool_button"
+                    android:contentDescription="@string/tool_brush"
+                    android:padding="8dp"
+                    android:src="@drawable/ic_brush"
+                    app:tint="@drawable/bg_tool_tint" />
+
+                <ImageButton
+                    android:id="@+id/btnEraser"
+                    android:layout_width="@dimen/tool_button_size"
+                    android:layout_height="@dimen/tool_button_size"
+                    android:layout_margin="3dp"
+                    android:background="@drawable/bg_tool_button"
+                    android:contentDescription="@string/tool_eraser"
+                    android:padding="8dp"
+                    android:src="@drawable/ic_eraser"
+                    app:tint="@drawable/bg_tool_tint" />
+
+                <ImageButton
+                    android:id="@+id/btnFill"
+                    android:layout_width="@dimen/tool_button_size"
+                    android:layout_height="@dimen/tool_button_size"
+                    android:layout_margin="3dp"
+                    android:background="@drawable/bg_tool_button"
+                    android:contentDescription="@string/tool_fill"
+                    android:padding="8dp"
+                    android:src="@drawable/ic_fill"
+                    app:tint="@drawable/bg_tool_tint" />
+
+                <ImageButton
+                    android:id="@+id/btnPick"
+                    android:layout_width="@dimen/tool_button_size"
+                    android:layout_height="@dimen/tool_button_size"
+                    android:layout_margin="3dp"
+                    android:background="@drawable/bg_tool_button"
+                    android:contentDescription="@string/tool_pick"
+                    android:padding="8dp"
+                    android:src="@drawable/ic_eyedropper"
+                    app:tint="@drawable/bg_tool_tint" />
+
+                <ImageButton
+                    android:id="@+id/btnPan"
+                    android:layout_width="@dimen/tool_button_size"
+                    android:layout_height="@dimen/tool_button_size"
+                    android:layout_margin="3dp"
+                    android:background="@drawable/bg_tool_button"
+                    android:contentDescription="@string/tool_pan"
+                    android:padding="8dp"
+                    android:src="@drawable/ic_hand"
+                    app:tint="@drawable/bg_tool_tint" />
+            </LinearLayout>
+        </HorizontalScrollView>
+    </LinearLayout>
+</LinearLayout>

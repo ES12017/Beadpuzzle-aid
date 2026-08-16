@@ -1,0 +1,23 @@
+# Gradle
+.gradle/
+build/
+**/build/
+.cxx/
+.externalNativeBuild/
+
+# 本机配置与签名（切勿提交！）
+local.properties
+*.keystore
+*.jks
+
+# IDE
+.idea/
+*.iml
+captures/
+
+# 系统
+.DS_Store
+Thumbs.db
+
+# 日志/杂项
+*.log

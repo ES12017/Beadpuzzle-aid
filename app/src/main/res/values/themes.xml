@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 全局直角，黑白极简 -->
+    <style name="ShapeAppearance.BeadPixel" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">8dp</item>
+    </style>
+
+    <style name="Theme.BeadPixel" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">#000000</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="colorPrimaryContainer">#E0E0E0</item>
+        <item name="colorOnPrimaryContainer">#000000</item>
+        <item name="colorSecondary">#424242</item>
+        <item name="colorOnSecondary">#FFFFFF</item>
+        <item name="segmentButtonStyle">@style/Widget.BeadPixel.SegmentButton</item>
+        <item name="colorSurface">#FFFFFF</item>
+        <item name="colorOnSurface">#000000</item>
+        <item name="colorSurfaceVariant">#EEEEEE</item>
+        <item name="colorOnSurfaceVariant">#616161</item>
+        <item name="colorOutline">#9E9E9E</item>
+        <item name="colorOutlineVariant">#BDBDBD</item>
+        <item name="android:windowBackground">#FFFFFF</item>
+        <item name="shapeAppearanceCornerExtraSmall">@style/ShapeAppearance.BeadPixel</item>
+        <item name="shapeAppearanceCornerSmall">@style/ShapeAppearance.BeadPixel</item>
+        <item name="shapeAppearanceCornerMedium">@style/ShapeAppearance.BeadPixel</item>
+        <item name="shapeAppearanceCornerLarge">@style/ShapeAppearance.BeadPixel</item>
+        <item name="shapeAppearanceCornerExtraLarge">@style/ShapeAppearance.BeadPixel</item>
+    </style>
+
+    <style name="Widget.BeadPixel.SegmentButton" parent="Widget.Material3.Button">
+        <item name="shapeAppearance">@style/ShapeAppearance.BeadPixel</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:minHeight">0dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+    </style>
+
+    <style name="Widget.BeadPixel.ActionButton" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="shapeAppearance">@style/ShapeAppearance.BeadPixel</item>
+        <item name="android:minHeight">40dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:paddingLeft">6dp</item>
+        <item name="android:paddingRight">6dp</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:autoSizeTextType">uniform</item>
+        <item name="android:autoSizeMinTextSize">9sp</item>
+        <item name="android:autoSizeMaxTextSize">12sp</item>
+        <item name="android:autoSizeStepGranularity">1sp</item>
+        <item name="iconSize">16dp</item>
+        <item name="iconPadding">3dp</item>
+        <item name="iconGravity">textStart</item>
+    </style>
+</resources>

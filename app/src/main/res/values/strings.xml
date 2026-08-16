@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">拼豆辅助</string>
+    <string name="tool_brush">画笔</string>
+    <string name="tool_eraser">橡皮</string>
+    <string name="tool_fill">填充</string>
+    <string name="tool_pick">取色</string>
+    <string name="tool_pan">平移</string>
+    <string name="empty_title">还没有画布</string>
+    <string name="empty_hint">点击上方「新建画布」或「从图片新建」开始&#10;在编辑器里可用图片转换成像素画</string>
+    <string name="fab_new">新建画布</string>
+</resources>
