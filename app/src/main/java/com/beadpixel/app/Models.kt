@@ -77,5 +77,7 @@ data class PixelProject(
     var width: Int = 32,
     var height: Int = 32,
     var pixels: IntArray = IntArray(32 * 32),
-    var updatedAt: Long = System.currentTimeMillis()
+    var updatedAt: Long = System.currentTimeMillis(),
+    var createdAt: Long = System.currentTimeMillis(),
+    var pinned: Boolean = false
 )

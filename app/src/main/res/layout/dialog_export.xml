@@ -25,4 +25,12 @@
         android:layout_marginTop="8dp"
         android:checked="true"
         android:text="显示网格线" />
+
+    <CheckBox
+        android:id="@+id/codeCheck"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:checked="true"
+        android:text="显示色号文字（方便对照图纸）" />
 </LinearLayout>

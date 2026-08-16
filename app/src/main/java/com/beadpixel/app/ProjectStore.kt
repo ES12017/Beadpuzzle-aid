@@ -14,7 +14,7 @@ object ProjectStore {
     private fun dir(context: Context): File = File(context.filesDir, "projects").apply { mkdirs() }
 
     private const val MAGIC = 0x50494E44 // "PIND"
-    private const val VERSION = 2
+    private const val VERSION = 3
     private val ioExecutor = Executors.newSingleThreadExecutor()
     private val saveLock = Any()
     private var saveQueued = false
@@ -61,6 +61,8 @@ object ProjectStore {
             dos.writeInt(p.width)
             dos.writeInt(p.height)
             dos.writeLong(p.updatedAt)
+            dos.writeLong(p.createdAt)
+            dos.writeBoolean(p.pinned)
             for (v in p.pixels) dos.writeInt(v)
         }
         return bos.toByteArray()
@@ -87,15 +89,21 @@ object ProjectStore {
             DataInputStream(ByteArrayInputStream(bytes)).use { dis ->
                 val magic = dis.readInt()
                 if (magic != MAGIC) return null
-                dis.readInt() // version
+                val version = dis.readInt()
                 val id = dis.readUTF()
                 val name = dis.readUTF()
                 val w = dis.readInt()
                 val h = dis.readInt()
                 val updatedAt = dis.readLong()
+                var createdAt = updatedAt
+                var pinned = false
+                if (version >= 3) {
+                    createdAt = dis.readLong()
+                    pinned = dis.readBoolean()
+                }
                 val px = IntArray(w * h)
                 for (i in px.indices) px[i] = dis.readInt()
-                PixelProject(id = id, name = name, width = w, height = h, pixels = px, updatedAt = updatedAt)
+                PixelProject(id = id, name = name, width = w, height = h, pixels = px, updatedAt = updatedAt, createdAt = createdAt, pinned = pinned)
             }
         } catch (_: Exception) {
             null
@@ -117,7 +125,9 @@ object ProjectStore {
                 width = w,
                 height = h,
                 pixels = px,
-                updatedAt = o.optLong("updatedAt", System.currentTimeMillis())
+                updatedAt = o.optLong("updatedAt", System.currentTimeMillis()),
+                createdAt = o.optLong("createdAt", o.optLong("updatedAt", System.currentTimeMillis())),
+                pinned = o.optBoolean("pinned", false)
             )
         } catch (_: Exception) {
             null

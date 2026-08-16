@@ -42,7 +42,7 @@ class MainActivity : AppCompatActivity() {
         adapter = ProjectAdapter(
             projects,
             onClick = { openProject(it) },
-            onLongClick = { showDeleteDialog(it) }
+            onLongClick = { showProjectMenu(it) }
         )
         binding.projectList.layoutManager = LinearLayoutManager(this)
         binding.projectList.adapter = adapter
@@ -55,7 +55,11 @@ class MainActivity : AppCompatActivity() {
 
     private fun reload() {
         projects.clear()
-        projects.addAll(ProjectStore.list(this))
+        projects.addAll(
+            ProjectStore.list(this).sortedWith(
+                compareByDescending<PixelProject> { it.pinned }.thenByDescending { it.createdAt }
+            )
+        )
         adapter.notifyDataSetChanged()
         binding.emptyView.visibility = if (projects.isEmpty()) View.VISIBLE else View.GONE
     }
@@ -143,14 +147,33 @@ class MainActivity : AppCompatActivity() {
             iw = maxOf(1, bmp.width * maxSide / bmp.height)
         }
         Dialogs.newProject(this, iw, ih) { name, w, h ->
-            Dialogs.imageMode(this) { mode, dither ->
-                val result = ImageConverter.convert(bmp, w, h, palette.colors, mode, dither)
+            Dialogs.imageMode(this) { mode ->
+                val result = ImageConverter.convert(bmp, w, h, palette.colors, mode)
                 val p = PixelProject(name = name, width = w, height = h, pixels = result)
                 ProjectStore.save(this, p)
                 openProject(p)
                 Toast.makeText(this, "已从图片创建画布", Toast.LENGTH_SHORT).show()
             }
         }
+    }
+
+    private fun showProjectMenu(p: PixelProject) {
+        val items = arrayOf(if (p.pinned) "取消置顶" else "置顶", "删除")
+        MaterialAlertDialogBuilder(this)
+            .setTitle(p.name)
+            .setItems(items) { _, which ->
+                when (which) {
+                    0 -> {
+                        p.pinned = !p.pinned
+                        ProjectStore.save(this, p)
+                        reload()
+                        Toast.makeText(this, if (p.pinned) "已置顶" else "已取消置顶", Toast.LENGTH_SHORT).show()
+                    }
+                    1 -> showDeleteDialog(p)
+                }
+            }
+            .setNegativeButton("取消", null)
+            .show()
     }
 
     private fun showDeleteDialog(p: PixelProject) {

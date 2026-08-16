@@ -284,26 +284,6 @@ class CanvasView @JvmOverloads constructor(
                     val ly = offY + j * scale
                     canvas.drawLine(vx0, ly, vx1, ly, gridPaint)
                 }
-                // 底部列标注（从左到右）
-                labelPaint.textSize = dp(9f)
-                labelPaint.color = labelColor
-                if (canvasBottom + dp(13f) <= height.toFloat()) {
-                    labelPaint.textAlign = Paint.Align.CENTER
-                    for (i in 5..widthCells step 5) {
-                        val lx = offX + i * scale
-                        if (lx < -30f || lx > width.toFloat() + 30f) continue
-                        canvas.drawText(i.toString(), lx, canvasBottom + dp(12f), labelPaint)
-                    }
-                }
-                // 左侧行标注（从上到下）
-                if (canvasLeft >= dp(16f)) {
-                    labelPaint.textAlign = Paint.Align.RIGHT
-                    for (j in 5..heightCells step 5) {
-                        val ly = offY + j * scale
-                        if (ly < -30f || ly > height.toFloat() + 30f) continue
-                        canvas.drawText(j.toString(), canvasLeft - dp(4f), ly + labelPaint.textSize / 3f, labelPaint)
-                    }
-                }
             }
             if (scale >= dp(minorGridThreshold)) {
                 // 普通小格线（放大后显示）
@@ -316,6 +296,42 @@ class CanvasView @JvmOverloads constructor(
                 for (j in y0..y1) {
                     val ly = offY + j * scale
                     canvas.drawLine(vx0, ly, vx1, ly, gridPaint)
+                }
+            }
+        }
+        // 常驻坐标标注：底部列号 + 左侧行号（不依赖缩放级别，画布左/底边界在屏幕内即显示；步长自适应避免重叠）
+        if (showGrid) {
+            val night = isNight()
+            val labelColor = if (night) 0xCCFFFFFF.toInt() else 0xCC000000.toInt()
+            val labelCanvasLeft = offX
+            val labelCanvasBottom = offY + heightCells * scale
+            val labelStep = 5 * ceil(48f / (scale * 5f)).toInt().coerceAtLeast(1)
+            labelPaint.textSize = dp(9f)
+            labelPaint.color = labelColor
+            if (labelCanvasBottom + dp(13f) <= height.toFloat()) {
+                labelPaint.textAlign = Paint.Align.CENTER
+                var li = ((x0 + labelStep - 1) / labelStep) * labelStep
+                while (li <= x1) {
+                    if (li >= 0 && li <= widthCells) {
+                        val lx = offX + li * scale
+                        if (lx >= -30f && lx <= width.toFloat() + 30f) {
+                            canvas.drawText(li.toString(), lx, labelCanvasBottom + dp(12f), labelPaint)
+                        }
+                    }
+                    li += labelStep
+                }
+            }
+            if (labelCanvasLeft >= dp(16f)) {
+                labelPaint.textAlign = Paint.Align.RIGHT
+                var lj = ((y0 + labelStep - 1) / labelStep) * labelStep
+                while (lj <= y1) {
+                    if (lj >= 0 && lj <= heightCells) {
+                        val ly = offY + lj * scale
+                        if (ly >= -30f && ly <= height.toFloat() + 30f) {
+                            canvas.drawText(lj.toString(), labelCanvasLeft - dp(4f), ly + labelPaint.textSize / 3f, labelPaint)
+                        }
+                    }
+                    lj += labelStep
                 }
             }
         }

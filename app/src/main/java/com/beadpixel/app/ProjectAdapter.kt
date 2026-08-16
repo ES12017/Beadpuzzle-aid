@@ -24,8 +24,8 @@ class ProjectAdapter(
     override fun onBindViewHolder(holder: VH, position: Int) {
         val p = items[position]
         val b = holder.binding
-        b.projectName.text = p.name
-        b.projectMeta.text = p.width.toString() + " × " + p.height + "    " + formatTime(p.updatedAt)
+        b.projectName.text = (if (p.pinned) "📌 " else "") + p.name
+        b.projectMeta.text = p.width.toString() + " × " + p.height + "    创建于 " + formatTime(p.createdAt)
         b.thumb.setImageBitmap(makeThumb(p))
         b.root.setOnClickListener { onClick(p) }
         b.root.setOnLongClickListener { onLongClick(p); true }

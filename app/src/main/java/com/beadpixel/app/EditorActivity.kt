@@ -25,6 +25,10 @@ import androidx.appcompat.app.AppCompatActivity
 import com.beadpixel.app.databinding.ActivityEditorBinding
 import com.beadpixel.app.databinding.ItemHudSwatchBinding
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import android.content.DialogInterface
+import androidx.core.content.FileProvider
+import java.io.File
+import java.io.FileOutputStream
 
 class EditorActivity : AppCompatActivity() {
 
@@ -359,8 +363,8 @@ class EditorActivity : AppCompatActivity() {
             Toast.makeText(this, "无法读取图片", Toast.LENGTH_SHORT).show()
             return
         }
-        Dialogs.imageMode(this) { mode, dither ->
-            val result = ImageConverter.convert(bmp, p.width, p.height, pal.colors, mode, dither)
+        Dialogs.imageMode(this) { mode ->
+            val result = ImageConverter.convert(bmp, p.width, p.height, pal.colors, mode)
             binding.canvas.pixels = result
             binding.canvas.fitToView()
             saveProject()
@@ -370,22 +374,60 @@ class EditorActivity : AppCompatActivity() {
 
     private fun showExportDialog() {
         val p = project ?: return
-        Dialogs.exportPng(this) { scale, grid ->
+        Dialogs.exportPng(this) { scale, grid, showCode ->
             val maxDim = 4096
             val maxSide = maxOf(p.width, p.height)
             val effScale = if (maxSide * scale > maxDim) maxOf(1, maxDim / maxSide) else scale
             if (effScale != scale) {
                 Toast.makeText(this, "画布较大，实际导出为 ${p.width * effScale}×${p.height * effScale}px（放大 ${effScale} 倍）", Toast.LENGTH_LONG).show()
             }
-            val bmp = buildExportBitmap(p, effScale, grid)
-            if (SettingsRepository.exportToGallery(this) && Build.VERSION.SDK_INT >= 29) {
-                saveToGallery(bmp, p.name + "_" + p.width + "x" + p.height + ".png")
-            } else {
-                pendingPng = bmp
-                createPng.launch(p.name + "_" + p.width + "x" + p.height + ".png")
-            }
+            val bmp = buildExportBitmap(p, effScale, grid, showCode)
+            showExportResult(bmp, p)
         }
     }
+
+    private fun showExportResult(bmp: Bitmap, p: PixelProject) {
+        val name = p.name + "_" + p.width + "x" + p.height + ".png"
+        MaterialAlertDialogBuilder(this)
+            .setTitle("导出完成")
+            .setMessage("已生成 ${bmp.width}×${bmp.height} 图纸，可保存到相册或分享给他人对照使用。")
+            .setPositiveButton("保存", null)
+            .setNeutralButton("分享", null)
+            .setNegativeButton("关闭", null)
+            .show()
+            .apply {
+                getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener {
+                    if (SettingsRepository.exportToGallery(this@EditorActivity) && Build.VERSION.SDK_INT >= 29) {
+                        saveToGallery(bmp, name)
+                    } else {
+                        pendingPng = bmp
+                        createPng.launch(name)
+                    }
+                    dismiss()
+                }
+                getButton(DialogInterface.BUTTON_NEUTRAL).setOnClickListener {
+                    shareBitmap(bmp, name)
+                }
+            }
+    }
+
+    private fun shareBitmap(bmp: Bitmap, name: String) {
+        try {
+            val dir = File(cacheDir, "shared").apply { mkdirs() }
+            val f = File(dir, name)
+            FileOutputStream(f).use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
+            val uri = FileProvider.getUriForFile(this, "com.beadpixel.app.fileprovider", f)
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = "image/png"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            startActivity(Intent.createChooser(intent, "分享图纸"))
+        } catch (e: Exception) {
+            Toast.makeText(this, "分享失败，请重试", Toast.LENGTH_SHORT).show()
+        }
+    }
+
 
     private fun saveToGallery(bmp: Bitmap, name: String) {
         try {
@@ -410,10 +452,11 @@ class EditorActivity : AppCompatActivity() {
         }
     }
 
-    private fun buildExportBitmap(p: PixelProject, scalePx: Int, grid: Boolean): Bitmap {
+    private fun buildExportBitmap(p: PixelProject, scalePx: Int, grid: Boolean, showCode: Boolean): Bitmap {
         val bmp = Bitmap.createBitmap(p.width * scalePx, p.height * scalePx, Bitmap.Config.ARGB_8888)
         val cv = Canvas(bmp)
         val paint = Paint()
+        val codeMap = if (showCode) buildCodeMap() else null
         for (y in 0 until p.height) {
             for (x in 0 until p.width) {
                 val c = p.pixels[y * p.width + x]
@@ -426,6 +469,10 @@ class EditorActivity : AppCompatActivity() {
                         ((y + 1) * scalePx).toFloat(),
                         paint
                     )
+                    if (codeMap != null) {
+                        val t = codeMap[c] ?: ("#" + ColorUtils.hex(c))
+                        drawExportCellText(cv, t, (x * scalePx).toFloat(), (y * scalePx).toFloat(), scalePx.toFloat(), c)
+                    }
                 }
             }
         }
@@ -455,6 +502,36 @@ class EditorActivity : AppCompatActivity() {
         }
         return bmp
     }
+
+    private fun buildCodeMap(): HashMap<Int, String> {
+        val m = HashMap<Int, String>()
+        for (c in (palette?.colors ?: emptyList())) {
+            if (!m.containsKey(c.argb)) m[c.argb] = c.codeText()
+        }
+        return m
+    }
+
+    private fun drawExportCellText(cv: Canvas, text: String, left: Float, top: Float, cell: Float, color: Int): Boolean {
+        if (text.isEmpty()) return false
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+        paint.color = ColorUtils.contrastText(color)
+        var size = cell * 0.42f
+        paint.textSize = size
+        val maxW = cell * 0.92f
+        if (text.length * size * 0.62f > maxW) {
+            var guard = 0
+            while (guard < 8 && size > 3f && paint.measureText(text) > maxW) {
+                size *= 0.82f
+                paint.textSize = size
+                guard++
+            }
+        }
+        val x = left + cell / 2f
+        val y = top + cell / 2f - (paint.ascent() + paint.descent()) / 2f
+        cv.drawText(text, x, y, paint)
+        return true
+    }
+
 
     private fun writePng(uri: Uri) {
         val bmp = pendingPng ?: return

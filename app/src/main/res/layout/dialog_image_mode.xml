@@ -24,13 +24,6 @@
             android:text="保持比例，多余区域透明" />
     </RadioGroup>
 
-    <CheckBox
-        android:id="@+id/ditherCheck"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:text="抖动处理（仅对照片/渐变有明显效果）" />
-
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

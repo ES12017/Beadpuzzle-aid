@@ -151,7 +151,7 @@ object Dialogs {
         }
     }
 
-    fun imageMode(activity: AppCompatActivity, onOk: (mode: Int, dither: Boolean) -> Unit) {
+    fun imageMode(activity: AppCompatActivity, onOk: (mode: Int) -> Unit) {
         val binding = DialogImageModeBinding.inflate(activity.layoutInflater)
         MaterialAlertDialogBuilder(activity)
             .setTitle("图片转像素")
@@ -162,13 +162,14 @@ object Dialogs {
             .apply {
                 getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener {
                     val mode = if (binding.modeFit.isChecked) 1 else 0
-                    onOk(mode, binding.ditherCheck.isChecked)
+                    onOk(mode)
                     dismiss()
                 }
             }
     }
 
-    fun exportPng(activity: AppCompatActivity, onOk: (scale: Int, grid: Boolean) -> Unit) {
+
+    fun exportPng(activity: AppCompatActivity, onOk: (scale: Int, grid: Boolean, showCode: Boolean) -> Unit) {
         val binding = DialogExportBinding.inflate(activity.layoutInflater)
         binding.scaleInput.setText("20")
         MaterialAlertDialogBuilder(activity)
@@ -180,7 +181,7 @@ object Dialogs {
             .apply {
                 getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener {
                     val s = binding.scaleInput.text?.toString()?.trim()?.toIntOrNull() ?: 20
-                    onOk(s.coerceIn(1, 100), binding.gridCheck.isChecked)
+                    onOk(s.coerceIn(1, 100), binding.gridCheck.isChecked, binding.codeCheck.isChecked)
                     dismiss()
                 }
             }

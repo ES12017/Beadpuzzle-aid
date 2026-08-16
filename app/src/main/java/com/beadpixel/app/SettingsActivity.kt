@@ -1,10 +1,15 @@
 package com.beadpixel.app
 
+import android.content.DialogInterface
+import android.content.Intent
 import android.content.res.ColorStateList
+import android.graphics.BitmapFactory
 import android.graphics.Color
+import android.net.Uri
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
@@ -12,6 +17,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import com.beadpixel.app.databinding.ActivitySettingsBinding
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.switchmaterial.SwitchMaterial
 
 class SettingsActivity : AppCompatActivity() {
@@ -113,16 +119,15 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         addSection(root, "关于")
+        addRow(root, "意见反馈") { showFeedbackDialog() }
+        addRow(root, "赞助支持") { showDonateDialog() }
         val aboutText = TextView(this)
         aboutText.text = "拼豆辅助 v1.0\n\n" +
             "图标基于 Material Design Icons（Apache 2.0，© Google）\n" +
             "依赖 AndroidX / Material Components（Apache 2.0）\n" +
-            "算法：CIEDE2000 色差、Floyd-Steinberg 抖动（公开算法）\n" +
+            "算法：CIEDE2000 色差、三维颜色查找表（公开算法）\n" +
             "内置色卡数据来源：HansBug/pindou-color-data（GitHub 开源项目）"
-        aboutText.textSize = 12f
-        aboutText.setTextColor(if (isNight()) Color.parseColor("#BDBDBD") else Color.parseColor("#616161"))
-        aboutText.setLineSpacing(0f, 1.3f)
-        aboutText.setPadding(0, dp(4), 0, dp(12))
+
         root.addView(aboutText, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
 
         val resetBtn = MaterialButton(this)
@@ -240,6 +245,68 @@ class SettingsActivity : AppCompatActivity() {
         sw.isChecked = value
         sw.setOnCheckedChangeListener { _, checked -> onChange(checked) }
         row.addView(sw)
+    }
+
+    private fun addRow(root: LinearLayout, label: String, onClick: () -> Unit) {
+        val row = LinearLayout(this)
+        row.orientation = LinearLayout.HORIZONTAL
+        row.gravity = Gravity.CENTER_VERTICAL
+        row.setPadding(0, dp(12), 0, dp(12))
+        row.isClickable = true
+        val tv = android.util.TypedValue()
+        theme.resolveAttribute(android.R.attr.selectableItemBackground, tv, true)
+        row.setBackgroundResource(tv.resourceId)
+        row.setOnClickListener { onClick() }
+        root.addView(row, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
+
+        val title = TextView(this)
+        title.text = label
+        title.textSize = 15f
+        title.setTextColor(if (isNight()) Color.WHITE else Color.BLACK)
+        title.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        row.addView(title)
+
+        val arrow = TextView(this)
+        arrow.text = "›"
+        arrow.textSize = 18f
+        arrow.setTextColor(if (isNight()) Color.parseColor("#BDBDBD") else Color.parseColor("#616161"))
+        row.addView(arrow)
+    }
+
+    private fun showFeedbackDialog() {
+        MaterialAlertDialogBuilder(this)
+            .setTitle("意见反馈")
+            .setMessage("欢迎反馈使用中遇到的问题或功能建议，我会持续改进。\n· 打开 GitHub Issues 提交（需要 GitHub 账号）")
+            .setPositiveButton("打开 GitHub Issues", null)
+            .setNegativeButton("取消", null)
+            .show()
+            .apply {
+                getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener {
+                    try {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/ES12017/Beadpuzzle-aid/issues/new"))
+                        startActivity(intent)
+                    } catch (e: Exception) {
+                        Toast.makeText(this@SettingsActivity, "无法打开浏览器", Toast.LENGTH_SHORT).show()
+                    }
+                    dismiss()
+                }
+            }
+    }
+
+    private fun showDonateDialog() {
+        val img = ImageView(this)
+        try {
+            val bmp = BitmapFactory.decodeResource(resources, R.drawable.donate_qr_placeholder)
+            img.setImageBitmap(bmp)
+        } catch (e: Exception) {
+        }
+        img.setPadding(dp(30), dp(16), dp(30), 0)
+        MaterialAlertDialogBuilder(this)
+            .setTitle("赞助支持")
+            .setMessage("拼豆辅助完全免费、无广告。如果它帮到了你，欢迎请我喝杯咖啡 ☕\n（自愿赞助，不影响任何功能使用）")
+            .setView(img)
+            .setPositiveButton("知道了", null)
+            .show()
     }
 
     private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
