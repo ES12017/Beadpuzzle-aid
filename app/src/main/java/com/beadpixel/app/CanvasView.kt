@@ -168,6 +168,7 @@ class CanvasView @JvmOverloads constructor(
     fun cellSizeDp(): Float = scale / resources.displayMetrics.density
 
 
+
     fun fitToView() {
         val w = width.toFloat()
         val h = height.toFloat()
@@ -319,10 +320,10 @@ class CanvasView @JvmOverloads constructor(
             }
         }
         if (drawCodes) {
-            for (cy in y0..y1) {
+            for (cy in y0 until y1) {
                 val rowBase = cy * widthCells
                 val top = offY + cy * scale
-                for (cx in x0..x1) {
+                for (cx in x0 until x1) {
                     val c = pixels[rowBase + cx]
                     if (c == 0) continue
                     val t = paletteMap[c] ?: ("#" + ColorUtils.hex(c))
@@ -363,10 +364,10 @@ class CanvasView @JvmOverloads constructor(
         if (!useChecker) {
             canvas.drawColor(emptyCellColor())
         }
-        for (cy in y0..y1) {
+        for (cy in y0 until y1) {
             val top = offY + cy * scale
             val rowBase = cy * widthCells
-            for (cx in x0..x1) {
+            for (cx in x0 until x1) {
                 val c = pixels[rowBase + cx]
                 val left = offX + cx * scale
                 if (c == 0) {
