@@ -276,12 +276,22 @@ class SettingsActivity : AppCompatActivity() {
     private fun showFeedbackDialog() {
         MaterialAlertDialogBuilder(this)
             .setTitle("意见反馈")
-            .setMessage("欢迎反馈使用中遇到的问题或功能建议，我会持续改进。\n· 打开 GitHub Issues 提交（需要 GitHub 账号）")
-            .setPositiveButton("打开 GitHub Issues", null)
+            .setMessage("欢迎反馈使用中遇到的问题或功能建议，我会持续改进。\n\n· 邮箱：z154051@163.com\n· QQ：3416268839\n· 或打开 GitHub Issues 提交（需要 GitHub 账号）")
+            .setPositiveButton("发邮件", null)
+            .setNeutralButton("打开 GitHub Issues", null)
             .setNegativeButton("取消", null)
             .show()
             .apply {
                 getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener {
+                    try {
+                        val intent = Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:z154051@163.com"))
+                        startActivity(intent)
+                    } catch (e: Exception) {
+                        Toast.makeText(this@SettingsActivity, "无法打开邮件应用", Toast.LENGTH_SHORT).show()
+                    }
+                    dismiss()
+                }
+                getButton(DialogInterface.BUTTON_NEUTRAL).setOnClickListener {
                     try {
                         val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/ES12017/Beadpuzzle-aid/issues/new"))
                         startActivity(intent)
@@ -292,6 +302,7 @@ class SettingsActivity : AppCompatActivity() {
                 }
             }
     }
+
 
     private fun showDonateDialog() {
         val img = ImageView(this)

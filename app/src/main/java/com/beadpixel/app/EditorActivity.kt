@@ -375,15 +375,39 @@ class EditorActivity : AppCompatActivity() {
     private fun showExportDialog() {
         val p = project ?: return
         Dialogs.exportPng(this) { scale, grid, showCode ->
-            val maxDim = 4096
-            val maxSide = maxOf(p.width, p.height)
-            val effScale = if (maxSide * scale > maxDim) maxOf(1, maxDim / maxSide) else scale
-            if (effScale != scale) {
-                Toast.makeText(this, "画布较大，实际导出为 ${p.width * effScale}×${p.height * effScale}px（放大 ${effScale} 倍）", Toast.LENGTH_LONG).show()
-            }
-            val bmp = buildExportBitmap(p, effScale, grid, showCode)
+            val bmp = buildExportBitmapSafe(p, scale, grid, showCode)
             showExportResult(bmp, p)
         }
+    }
+
+    /**
+     * 以"尽可能无损"导出：优先使用用户指定的每格像素数，若画布过大导致内存不足
+     * 或超出设备位图尺寸，自动逐步降级并提示，换取尽量高的清晰度。
+     */
+    private fun buildExportBitmapSafe(p: PixelProject, scalePx: Int, grid: Boolean, showCode: Boolean): Bitmap {
+        var s = scalePx.coerceIn(1, 100)
+        while (true) {
+            val px = p.width.toLong() * s
+            val py = p.height.toLong() * s
+            if (px * py <= 16000L * 16000L) {
+                try {
+                    val bmp = buildExportBitmap(p, s, grid, showCode)
+                    if (s != scalePx) {
+                        Toast.makeText(this, "图纸过大，已自动调整：每格 ${s}px（导出 ${px}×${py}）", Toast.LENGTH_LONG).show()
+                    }
+                    return bmp
+                } catch (e: OutOfMemoryError) {
+                    s = maxOf(1, s * 2 / 3)
+                    continue
+                } catch (e: Throwable) {
+                    s = maxOf(1, s * 2 / 3)
+                    continue
+                }
+            }
+            s = maxOf(1, s * 2 / 3)
+            if (s <= 1) break
+        }
+        return buildExportBitmap(p, 1, grid, showCode)
     }
 
     private fun showExportResult(bmp: Bitmap, p: PixelProject) {
@@ -514,13 +538,15 @@ class EditorActivity : AppCompatActivity() {
     private fun drawExportCellText(cv: Canvas, text: String, left: Float, top: Float, cell: Float, color: Int): Boolean {
         if (text.isEmpty()) return false
         val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+        paint.isFakeBoldText = true
         paint.color = ColorUtils.contrastText(color)
-        var size = cell * 0.42f
+        paint.textAlign = Paint.Align.CENTER
+        var size = cell * 0.5f
         paint.textSize = size
-        val maxW = cell * 0.92f
+        val maxW = cell * 0.96f
         if (text.length * size * 0.62f > maxW) {
             var guard = 0
-            while (guard < 8 && size > 3f && paint.measureText(text) > maxW) {
+            while (guard < 8 && size > 4f && paint.measureText(text) > maxW) {
                 size *= 0.82f
                 paint.textSize = size
                 guard++
