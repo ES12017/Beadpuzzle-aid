@@ -71,8 +71,12 @@ BeadPixel/
 
 ## 开源协议
 
-本项目以 [MIT License](LICENSE) 开源。第三方组件与内置色卡数据的许可见
-[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
+本项目以 [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/)
+（知识共享署名-非商业性使用-相同方式共享 4.0 国际）协议开源：允许学习、使用、
+修改与分享，但**严禁商用**；衍生作品须采用相同许可并保留署名。
+许可证全文见 [LICENSE](LICENSE)。
+
+第三方组件与内置色卡数据的许可见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
 
 ## 致谢
 
